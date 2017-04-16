@@ -6,6 +6,7 @@ import (
 	"time"
 	"os"
 	"bufio"
+	"io"
 )
 
 func TestNewStorage(t *testing.T) {
@@ -15,24 +16,26 @@ func TestNewStorage(t *testing.T) {
 }
 
 func TestStoragePersist(t *testing.T) {
-	storage := NewStorage("test")
+	testFile := "test"
+	nodesNum := 10
+	storage := NewStorage(testFile)
 	require.NotNil(t, storage)
-	require.Equal(t, "test", storage.filePath)
-	for i:=0; i < 10; i++ {
+	require.Equal(t, testFile, storage.filePath)
+	for i:=0; i < nodesNum; i++ {
 		storage.Add(time.Now())
 		time.Sleep(time.Millisecond * 88)
 	}
 	storage.Persist()
-	f, err := os.Open("test")
+	f, err := os.Open(testFile)
 	require.Nil(t, err)
 	require.NotNil(t, f)
 	r := bufio.NewReader(f)
-	for i:=0; i < 10; i++ {
+	for i:=0; i < nodesNum; i++ {
 		_, _, err  := r.ReadLine()
 		require.Nil(t, err)
 	}
 
-	//_, _, err  = r.ReadLine()
-	//require.Equal(t, io.EOF, err)
-	//os.Remove("test")
+	_, _, err  = r.ReadLine()
+	require.Equal(t, io.EOF, err)
+	os.Remove(testFile)
 }
