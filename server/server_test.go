@@ -1,4 +1,4 @@
-package codingchallenge
+package server
 
 import (
 	"testing"

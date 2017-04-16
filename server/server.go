@@ -1,4 +1,4 @@
-package codingchallenge
+package server
 
 import (
 	"sync"
@@ -37,11 +37,10 @@ func serverHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.Counter += 1
 		counter := map[string]int{"Counter": s.Counter}
-		s.mu.Unlock()
 		json.NewEncoder(w).Encode(counter)
-
 	}
 }
 
