@@ -1,10 +1,10 @@
 package server
 
 import (
-	"sync"
-	"net/http"
-	"log"
 	"encoding/json"
+	"log"
+	"net/http"
+	"sync"
 )
 
 type Server struct {
@@ -17,8 +17,8 @@ type Server struct {
 func NewServer(listenAddr string) *Server {
 	return &Server{
 		ListenAddr: listenAddr,
-		wg: &sync.WaitGroup{},
-		mu: &sync.Mutex{},
+		wg:         &sync.WaitGroup{},
+		mu:         &sync.Mutex{},
 	}
 }
 
