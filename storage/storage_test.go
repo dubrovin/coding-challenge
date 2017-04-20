@@ -22,10 +22,10 @@ func TestStoragePersist(t *testing.T) {
 	require.NotNil(t, storage)
 	require.Equal(t, testFile, storage.filePath)
 	for i := 0; i < nodesNum; i++ {
-		storage.Add(time.Now())
+		storage.Add(*NewNode(time.Now()))
 		time.Sleep(time.Millisecond * 88)
 	}
-	storage.Persist()
+	storage.persist()
 	f, err := os.Open(testFile)
 	require.Nil(t, err)
 	require.NotNil(t, f)
@@ -41,4 +41,8 @@ func TestStoragePersist(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	require.Equal(t, 0, storage.GetCount())
 	os.Remove(testFile)
+
+
+	storage.clean()
+	require.Empty(t, storage.nodes)
 }

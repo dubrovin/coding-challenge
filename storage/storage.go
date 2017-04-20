@@ -7,21 +7,30 @@ import (
 	"time"
 )
 
+type Node struct {
+	timestamp time.Time
+	persisted bool
+}
+
+func NewNode(timestamp time.Time) *Node {
+	return &Node{timestamp: timestamp, persisted: false}
+}
+
 type Storage struct {
 	filePath  string
-	nodes     []time.Time
+	nodes     []Node
 	countTime time.Duration
 }
 
 func NewStorage(filePath string, countTime time.Duration) *Storage {
 	return &Storage{
 		filePath:  filePath,
-		nodes:     make([]time.Time, 0),
+		nodes:     make([]Node, 0),
 		countTime: countTime,
 	}
 }
 
-func (storage *Storage) Persist() error {
+func (storage *Storage) persist() error {
 	f, err := storage.open()
 
 	if err != nil {
@@ -31,10 +40,11 @@ func (storage *Storage) Persist() error {
 
 	w := bufio.NewWriter(f)
 	for _, node := range storage.nodes {
-		_, err = w.WriteString(fmt.Sprint(node.String(), "\n"))
+		_, err = w.WriteString(fmt.Sprint(node.timestamp.String(), "\n"))
 		if err != nil {
 			fmt.Println(err)
 		}
+		node.persisted = true
 	}
 
 	err = w.Flush()
@@ -62,7 +72,7 @@ func (storage *Storage) open() (*os.File, error) {
 	return f, err
 }
 
-func (storage *Storage) Add(node time.Time) {
+func (storage *Storage) Add(node Node) {
 	storage.nodes = append(storage.nodes, node)
 }
 
@@ -70,17 +80,57 @@ func (storage *Storage) GetCount() int {
 	return len(storage.filter())
 }
 
-func (storage *Storage) filter() []time.Time {
+func (storage *Storage) filter() []Node {
 
-	var p []time.Time
+	var p []Node
 
 	tEnd := time.Now()
 	tBegin := tEnd.Add(-storage.countTime)
 
 	for _, node := range storage.nodes {
-		if node.After(tBegin) && node.Before(tEnd) {
+		if node.timestamp.After(tBegin) && node.timestamp.Before(tEnd) {
 			p = append(p, node)
 		}
 	}
 	return p
+}
+
+func (storage *Storage) Persister(duration string) error{
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return err
+	}
+
+	tiker :=time.NewTicker(dur)
+	defer tiker.Stop()
+
+	for t := range tiker.C {
+		fmt.Println("Persisted at ", t.String())
+		err = storage.persist()
+		if err != nil {
+			fmt.Println("Persister error ", err)
+		}
+	}
+	return nil
+}
+
+func (storage *Storage) clean() {
+	storage.nodes = storage.filter()
+}
+
+func (storage *Storage) Cleaner(duration string) error {
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return err
+	}
+
+	tiker :=time.NewTicker(dur)
+	defer tiker.Stop()
+	for t := range tiker.C {
+		fmt.Println("Cleaned at ", t.String())
+		storage.clean()
+	}
+
+
+	return nil
 }
