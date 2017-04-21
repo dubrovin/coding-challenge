@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type Counter struct {
@@ -13,14 +14,14 @@ type Counter struct {
 }
 
 func TestNewServer(t *testing.T) {
-	addr := ":8080"
-	newServer := NewServer(addr)
+	addr := ":8081"
+	newServer := NewServer(addr, "test1", time.Second * 60)
 	require.Equal(t, addr, newServer.ListenAddr)
 }
 
 func TestServerRun(t *testing.T) {
 	addr := ":8080"
-	newServer := NewServer(addr)
+	newServer := NewServer(addr, "test", time.Second * 60)
 	go newServer.Run()
 
 	var cnt Counter

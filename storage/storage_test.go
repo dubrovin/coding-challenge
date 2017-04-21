@@ -10,12 +10,12 @@ import (
 )
 
 func TestNewStorage(t *testing.T) {
-	storage := NewStorage("test", time.Second*60)
+	storage := NewStorage("test1", time.Second*60)
 	require.NotNil(t, storage)
-	require.Equal(t, "test", storage.filePath)
+	require.Equal(t, "test1", storage.filePath)
 }
 
-func TestStoragePersist(t *testing.T) {
+func TestStorageFuctionality(t *testing.T) {
 	testFile := "test"
 	nodesNum := 10
 	storage := NewStorage(testFile, time.Second*1)
@@ -42,7 +42,13 @@ func TestStoragePersist(t *testing.T) {
 	require.Equal(t, 0, storage.GetCount())
 	os.Remove(testFile)
 
-
-	storage.clean()
-	require.Empty(t, storage.nodes)
+	//storage.clean()
+	//require.Empty(t, storage.nodes)
+	//go storage.Worker()
+	//for i := 0; i < nodesNum; i++ {
+	//	storage.Inc(*NewNode(time.Now()))
+	//	time.Sleep(time.Millisecond * 88)
+	//}
+	//require.Len(t, storage.nodes, nodesNum)
+	//storage.stop <- struct {}{}
 }
