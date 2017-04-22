@@ -15,17 +15,19 @@ type Counter struct {
 
 func TestNewServer(t *testing.T) {
 	addr := ":8081"
-	newServer := NewServer(addr, "test1", time.Second * 60)
+	testFile := "testFile1"
+	newServer := NewServer(addr, testFile , time.Second * 60)
 	require.Equal(t, addr, newServer.ListenAddr)
 }
 
 func TestServerRun(t *testing.T) {
 	addr := ":8080"
-	newServer := NewServer(addr, "test", time.Second * 60)
+	testFile := "servertest2"
+	newServer := NewServer(addr, testFile, time.Second * 60)
 	go newServer.Run()
 
 	var cnt Counter
-
+	time.Sleep(time.Second)
 	for i := 0; i < 100; i++ {
 		resp, err := http.Get("http://127.0.0.1:8080/counter")
 		require.Nil(t, err)
@@ -36,5 +38,5 @@ func TestServerRun(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, i+1, cnt.Counter)
 	}
-
+	newServer.Storage.Stop()
 }

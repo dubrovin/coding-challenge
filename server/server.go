@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"fmt"
 )
 
 type Server struct {
@@ -23,9 +24,13 @@ func NewServer(listenAddr, filePath string, countTime time.Duration) *Server {
 func (s *Server) Run() error {
 	http.HandleFunc("/counter", serverHandler(s))
 	go s.Storage.Worker()
+	err := s.Storage.Load()
+	if err != nil {
+		fmt.Println(err)
+	}
 	go s.Storage.Persister("1s")
 	go s.Storage.Cleaner("60s")
-	err := http.ListenAndServe(s.ListenAddr, nil)
+	err = http.ListenAndServe(s.ListenAddr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 		return err
