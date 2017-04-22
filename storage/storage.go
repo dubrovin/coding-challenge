@@ -37,6 +37,7 @@ func NewStorage(filePath string, countTime time.Duration) *Storage {
 		persistCh: make(chan struct{}),
 		cleanCh:   make(chan struct{}),
 		lenCh: make(chan int),
+		stop: make(chan struct{}),
 	}
 }
 
@@ -50,9 +51,8 @@ func (storage *Storage) persist() error {
 
 	w := bufio.NewWriter(f)
 	for _, node := range storage.nodes {
-		fmt.Println("NODE ", node)
 		if !node.persisted{
-			_, err = w.WriteString(fmt.Sprint(node.timestamp.String(), "\n"))
+			_, err = w.WriteString(fmt.Sprint(node.timestamp.Format(time.RFC3339Nano), "\n"))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -183,21 +183,34 @@ func (storage *Storage) Worker() {
 }
 
 
-func (storage *Storage) Load(filepath string) error {
-	f, err := os.Open(filepath)
+func (storage *Storage) Load() error {
+	f, err := os.Open(storage.filePath)
 	if err != nil {
+		fmt.Println("open error", err)
 		return err
 	}
 	defer f.Close()
 	r := bufio.NewReader(f)
-	for err != io.EOF {
+	for {
 		line, _, err := r.ReadLine()
-		if err != nil {
-			fmt.Println(err)
+		if err == io.EOF{
+			break
+		} else {
+			t, err := time.Parse(time.RFC3339Nano, string(line))
+			if err != nil {
+				fmt.Println("PARSE ERROR", err)
+				return err
+			}
+			persistedNode := NewNode(t)
+			persistedNode.persisted = true
+			storage.Inc(persistedNode)
 		}
-		fmt.Println(string(line))
+
 	}
 
 	return nil
+}
 
+func (storage *Storage) Stop() {
+	storage.stop <- struct {}{}
 }

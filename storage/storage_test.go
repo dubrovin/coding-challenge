@@ -15,17 +15,18 @@ func TestNewStorage(t *testing.T) {
 	require.Equal(t, "test1", storage.filePath)
 }
 
-func TestStorageFuctionality(t *testing.T) {
-	testFile := "test"
+func TestStoragePersist(t *testing.T) {
+	testFile := "test1"
 	nodesNum := 10
-	storage := NewStorage(testFile, time.Second*1)
+	storage := NewStorage(testFile, time.Second*2)
+	go storage.Worker()
 	require.NotNil(t, storage)
 	require.Equal(t, testFile, storage.filePath)
 	for i := 0; i < nodesNum; i++ {
-		storage.Add(*NewNode(time.Now()))
-		time.Sleep(time.Millisecond * 88)
+		storage.Inc(NewNode(time.Now()))
 	}
-	storage.persist()
+	storage.persistCh <- struct {}{}
+	time.Sleep(time.Second)
 	f, err := os.Open(testFile)
 	require.Nil(t, err)
 	require.NotNil(t, f)
@@ -40,15 +41,32 @@ func TestStorageFuctionality(t *testing.T) {
 	require.Equal(t, nodesNum, storage.GetCount())
 	time.Sleep(time.Second * 2)
 	require.Equal(t, 0, storage.GetCount())
+	time.Sleep(time.Second)
 	os.Remove(testFile)
 
-	//storage.clean()
+	//storage.cleanCh <- struct {}{}
+	//time.Sleep(time.Second)
 	//require.Empty(t, storage.nodes)
-	//go storage.Worker()
 	//for i := 0; i < nodesNum; i++ {
-	//	storage.Inc(*NewNode(time.Now()))
+	//	storage.Inc(NewNode(time.Now()))
 	//	time.Sleep(time.Millisecond * 88)
 	//}
 	//require.Len(t, storage.nodes, nodesNum)
-	//storage.stop <- struct {}{}
+}
+
+func TestStorageLoad(t *testing.T) {
+	testFile := "test2"
+	nodesNum := 10
+	storage := NewStorage(testFile, time.Second*60)
+	go storage.Worker()
+	require.NotNil(t, storage)
+	require.Equal(t, testFile, storage.filePath)
+	f, _ := os.Create(testFile)
+	for i := 0; i < nodesNum; i++ {
+		f.WriteString(time.Now().Format(time.RFC3339Nano)+"\n")
+	}
+	f.Close()
+	storage.Load()
+	require.Equal(t,nodesNum, storage.GetCount())
+	os.Remove(testFile)
 }
