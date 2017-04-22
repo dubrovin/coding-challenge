@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 	"time"
+	"os"
 )
 
 type Counter struct {
@@ -39,4 +40,5 @@ func TestServerRun(t *testing.T) {
 		require.Equal(t, i+1, cnt.Counter)
 	}
 	newServer.Storage.Stop()
+	os.Remove(testFile)
 }
