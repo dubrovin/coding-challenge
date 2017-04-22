@@ -25,7 +25,7 @@ func TestStoragePersist(t *testing.T) {
 	for i := 0; i < nodesNum; i++ {
 		storage.Inc(NewNode(time.Now()))
 	}
-	storage.persistCh <- struct {}{}
+	storage.persistCh <- struct{}{}
 	time.Sleep(time.Second)
 	f, err := os.Open(testFile)
 	require.Nil(t, err)
@@ -44,14 +44,6 @@ func TestStoragePersist(t *testing.T) {
 	time.Sleep(time.Second)
 	os.Remove(testFile)
 
-	//storage.cleanCh <- struct {}{}
-	//time.Sleep(time.Second)
-	//require.Empty(t, storage.nodes)
-	//for i := 0; i < nodesNum; i++ {
-	//	storage.Inc(NewNode(time.Now()))
-	//	time.Sleep(time.Millisecond * 88)
-	//}
-	//require.Len(t, storage.nodes, nodesNum)
 }
 
 func TestStorageLoad(t *testing.T) {
@@ -63,10 +55,10 @@ func TestStorageLoad(t *testing.T) {
 	require.Equal(t, testFile, storage.filePath)
 	f, _ := os.Create(testFile)
 	for i := 0; i < nodesNum; i++ {
-		f.WriteString(time.Now().Format(time.RFC3339Nano)+"\n")
+		f.WriteString(time.Now().Format(time.RFC3339Nano) + "\n")
 	}
 	f.Close()
 	storage.Load()
-	require.Equal(t,nodesNum, storage.GetCount())
+	require.Equal(t, nodesNum, storage.GetCount())
 	os.Remove(testFile)
 }

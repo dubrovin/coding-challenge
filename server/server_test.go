@@ -5,26 +5,30 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
-	"os"
 )
 
 type Counter struct {
 	Counter int `json:"Counter"`
 }
 
+func init() {
+	os.Remove("testdata/servertest2")
+}
+
 func TestNewServer(t *testing.T) {
 	addr := ":8081"
-	testFile := "testFile1"
-	newServer := NewServer(addr, testFile , time.Second * 60)
+	testFile := "testdata/testFile1"
+	newServer := NewServer(addr, testFile, time.Second*60)
 	require.Equal(t, addr, newServer.ListenAddr)
 }
 
 func TestServerRun(t *testing.T) {
 	addr := ":8080"
-	testFile := "servertest2"
-	newServer := NewServer(addr, testFile, time.Second * 60)
+	testFile := "testdata/servertest2"
+	newServer := NewServer(addr, testFile, time.Second*60)
 	go newServer.Run()
 
 	var cnt Counter

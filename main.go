@@ -1,16 +1,15 @@
 package main
 
 import (
-	"time"
-	"github.com/dubrovin/coding-challenge/server"
 	"flag"
 	"fmt"
+	"github.com/dubrovin/coding-challenge/server"
+	"time"
 )
 
-
 var (
-	addr = flag.String("addr", ":8080", "http service address")
-	filepath = flag.String("file", "storage.txt", "storage file path")
+	addr      = flag.String("addr", ":8080", "http service address")
+	filepath  = flag.String("file", "storage.txt", "storage file path")
 	countTime = flag.String("count", "60s", "time for counting")
 )
 

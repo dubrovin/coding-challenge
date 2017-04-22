@@ -2,18 +2,19 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dubrovin/coding-challenge/storage"
 	"log"
 	"net/http"
 	"time"
-	"fmt"
 )
-
+// Server - server which contain storage
 type Server struct {
 	ListenAddr string
 	Storage    *storage.Storage
 }
 
+// NewServer - creates server and storage
 func NewServer(listenAddr, filePath string, countTime time.Duration) *Server {
 	return &Server{
 		ListenAddr: listenAddr,
@@ -21,6 +22,7 @@ func NewServer(listenAddr, filePath string, countTime time.Duration) *Server {
 	}
 }
 
+// Run -
 func (s *Server) Run() error {
 	http.HandleFunc("/counter", serverHandler(s))
 	go s.Storage.Worker()
@@ -29,7 +31,8 @@ func (s *Server) Run() error {
 		fmt.Println(err)
 	}
 	go s.Storage.Persister("1s")
-	go s.Storage.Cleaner("60s")
+	go s.Storage.Cleaner()
+	fmt.Println("Lesten at addres ", s.ListenAddr)
 	err = http.ListenAndServe(s.ListenAddr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -38,6 +41,7 @@ func (s *Server) Run() error {
 	return nil
 }
 
+// serverHandler - main handler, counts each request
 func serverHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

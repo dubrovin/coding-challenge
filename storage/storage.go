@@ -3,29 +3,46 @@ package storage
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"time"
-	"io"
 )
-
+// Node - structure for each request
 type Node struct {
 	timestamp time.Time
 	persisted bool
 }
 
+// NewNode - creates new node, by default persisted = false
 func NewNode(timestamp time.Time) *Node {
 	return &Node{timestamp: timestamp, persisted: false}
 }
 
+// Storage -
 type Storage struct {
+	// filePath - path where we persists requests data
 	filePath  string
+
+	// nodes - in memory cache of requests
 	nodes     []*Node
+
+	// countTime - time for counting total number of requests
 	countTime time.Duration
+
+	// countCh - channel for counting
 	countCh   chan *Node
+
+	// persistCh - channel for persisting
 	persistCh chan struct{}
+
+	// cleanCh - channel for clean in memory cache of nodes
 	cleanCh   chan struct{}
-	lenCh chan int
-	stop chan struct{}
+
+	// lenCh - channel for receiving current len of nodes
+	lenCh     chan int
+
+	// stop - channel for stopping worker
+	stop      chan struct{}
 }
 
 func NewStorage(filePath string, countTime time.Duration) *Storage {
@@ -36,8 +53,8 @@ func NewStorage(filePath string, countTime time.Duration) *Storage {
 		countCh:   make(chan *Node),
 		persistCh: make(chan struct{}),
 		cleanCh:   make(chan struct{}),
-		lenCh: make(chan int),
-		stop: make(chan struct{}),
+		lenCh:     make(chan int),
+		stop:      make(chan struct{}),
 	}
 }
 
@@ -51,7 +68,7 @@ func (storage *Storage) persist() error {
 
 	w := bufio.NewWriter(f)
 	for _, node := range storage.nodes {
-		if !node.persisted{
+		if !node.persisted {
 			_, err = w.WriteString(fmt.Sprint(node.timestamp.Format(time.RFC3339Nano), "\n"))
 			if err != nil {
 				fmt.Println(err)
@@ -59,14 +76,12 @@ func (storage *Storage) persist() error {
 			node.persisted = true
 		}
 
-
 	}
 
 	err = w.Flush()
 	if err != nil {
 		return err
 	}
-	fmt.Println("Persisted ")
 	return nil
 }
 
@@ -88,19 +103,19 @@ func (storage *Storage) open() (*os.File, error) {
 	return f, err
 }
 
-func (storage *Storage) Add(node *Node) {
+func (storage *Storage) add(node *Node) {
 	storage.nodes = append(storage.nodes, node)
 }
 
+// GetCount - returns current count of requests
 func (storage *Storage) GetCount() int {
 	storage.lenCh <- 0
 	return <-storage.lenCh
 }
 
+// filter - filter all nodes in cache by the given storage.countTime
 func (storage *Storage) filter() []*Node {
-
 	var p []*Node
-
 	tEnd := time.Now()
 	tBegin := tEnd.Add(-storage.countTime)
 	for _, node := range storage.nodes {
@@ -111,6 +126,7 @@ func (storage *Storage) filter() []*Node {
 	return p
 }
 
+// Persister - runs persist by tiker with given duration
 func (storage *Storage) Persister(duration string) error {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
@@ -127,12 +143,12 @@ func (storage *Storage) Persister(duration string) error {
 	return nil
 }
 
+// clean - clean cache of nodes
 func (storage *Storage) clean() {
-
 	var p []*Node
-
 	tEnd := time.Now()
 	tBegin := tEnd.Add(-storage.countTime)
+	// remove all nodes which time greater than storage.countTime
 	for _, node := range storage.nodes {
 		if node.timestamp.After(tBegin) && node.timestamp.Before(tEnd) && !node.persisted {
 			p = append(p, node)
@@ -142,13 +158,9 @@ func (storage *Storage) clean() {
 	storage.nodes = p
 }
 
-func (storage *Storage) Cleaner(duration string) error {
-	dur, err := time.ParseDuration(duration)
-	if err != nil {
-		return err
-	}
-
-	tiker := time.NewTicker(dur)
+// Cleaner - runs clean by tiker with given duration
+func (storage *Storage) Cleaner() error {
+	tiker := time.NewTicker(storage.countTime)
 	defer tiker.Stop()
 	for t := range tiker.C {
 		fmt.Println("Cleaned at ", t.String())
@@ -158,23 +170,27 @@ func (storage *Storage) Cleaner(duration string) error {
 	return nil
 }
 
+// Inc - increase cache by node
 func (storage *Storage) Inc(node *Node) {
 	storage.countCh <- node
 }
 
+// Worker - runs worker which listen channel
 func (storage *Storage) Worker() {
 
 	for {
 		select {
 		case node := <-storage.countCh:
-			storage.Add(node)
+			storage.add(node)
 		case <-storage.persistCh:
 			err := storage.persist()
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println("persist error ", err)
+			}
 		case <-storage.cleanCh:
 			storage.clean()
 		case <-storage.lenCh:
-			storage.lenCh<-len(storage.filter())
+			storage.lenCh <- len(storage.filter())
 		case <-storage.stop:
 			break
 		}
@@ -182,7 +198,7 @@ func (storage *Storage) Worker() {
 	}
 }
 
-
+// Load - loads nodes to cache from given storage.filePath
 func (storage *Storage) Load() error {
 	f, err := os.Open(storage.filePath)
 	if err != nil {
@@ -193,7 +209,7 @@ func (storage *Storage) Load() error {
 	r := bufio.NewReader(f)
 	for {
 		line, _, err := r.ReadLine()
-		if err == io.EOF{
+		if err == io.EOF {
 			break
 		} else {
 			t, err := time.Parse(time.RFC3339Nano, string(line))
@@ -211,6 +227,7 @@ func (storage *Storage) Load() error {
 	return nil
 }
 
+// Stop - stops worker
 func (storage *Storage) Stop() {
-	storage.stop <- struct {}{}
+	storage.stop <- struct{}{}
 }
