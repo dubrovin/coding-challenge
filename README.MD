@@ -11,13 +11,13 @@ $ ./coding-challenge
 or
 
 ```
-    $ go run main.go
+$ go run main.go
 ```
 by defaults server run with next parameters:
 ```
-    addr =  ":8080" // "http server address
-	file  = "storage.txt" // "file for persisting"
-	count = "60s" // "time for counting"
+addr =  ":8080" // "http server address
+file  = "storage.txt" // "file for persisting"
+count = "60s" // "time for counting"
 ```
 if you want change default values, you must give your values like this:
 
